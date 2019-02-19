@@ -67,7 +67,8 @@ class Registration(View):
         if form.is_valid():
             user = form.save(commit=False)
             user.is_active = False
-            user.password = form.cleaned_data['password']
+            password = form.cleaned_data['password']
+            user.set_password(password)
             usertype = form.cleaned_data['user_type']
             user.save()
             global utype
