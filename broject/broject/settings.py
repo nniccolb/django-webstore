@@ -121,3 +121,4 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 STATIC_URL = '/static/'
 
 LOGIN_REDIRECT_URL = '/games/'
+LOGIN_URL = '/games/login/'

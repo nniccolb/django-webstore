@@ -18,6 +18,7 @@ from django.contrib.auth.models import User
 utype = None
 
 class IndexView(generic.ListView):
+    #defines default view
     template_name = 'games/index.html'
     context_object_name = 'all_categories'
 
@@ -25,6 +26,7 @@ class IndexView(generic.ListView):
         return Category.objects.all()
 
 def profile(request):
+    #defines user's profile view
     user = request.user.userprofile
     games = Game.objects.filter(developer=user)
     context = {
@@ -33,11 +35,13 @@ def profile(request):
     return render(request, 'games/profile.html', context)
 
 class DetailView(generic.DetailView):
+    #gets all games from specified category
     model = Category
     pk_url_kwarg='category_pk'
     template_name = 'games/categoryView.html'
 
 class GameCreate(View):
+    #creates game
     form_class = GameForm
     template_name = 'games/game_form.html'
 
@@ -46,14 +50,17 @@ class GameCreate(View):
         return render(request, self.template_name, {'form': form})
 
     def post(self, request):
+        #views game form for creation
         form = self.form_class(request.POST)
         if form.is_valid():
+            #saves game to database and render it
             game = form.save(commit=False)
             game.developer = request.user.userprofile
             game.save()
             return render(request, 'games/game_add_success.html')
         return render(request, self.template_name, {'form': form})
 class Registration(View):
+    #class for registration
     form_class = UserForm
     template_name = 'games/registration_form.html'
 
@@ -65,6 +72,7 @@ class Registration(View):
         form = self.form_class(request.POST)
 
         if form.is_valid():
+            #handles registration
             user = form.save(commit=False)
             user.is_active = False
             password = form.cleaned_data['password']
@@ -89,7 +97,9 @@ class Registration(View):
 
 
 def checksum(request, game_pk,category_pk):
-    game = Game.objects.get(id=game_pk)
+    #functon generates hashed variable to use payment system
+    game = Game.objects.get(id=game_pk) #get game id
+    #generating needed variables
     pid = request.user.id
     sid = 'broject112'
     amount = game.price
@@ -99,6 +109,7 @@ def checksum(request, game_pk,category_pk):
     checksum = m.hexdigest()
     scores = Score.objects.filter(game=game).order_by('-value')[:10]
     context = {
+    #collects the data of payment for gameview
 			'pid': pid,
 			'sid': sid,
 			'amount': amount,
@@ -113,24 +124,24 @@ def checksum(request, game_pk,category_pk):
     return render(request, 'games/gameView.html', context)
 
 def success_payment(request,game_id,category_pk):
-    pid = request.GET['pid']
-    ref = request.GET['ref']
+    pid = request.GET['pid'] #get user id
+    ref = request.GET['ref'] #get ref
 
-    url_checksum = request.GET['checksum']
+    url_checksum = request.GET['checksum'] #get generated checksum
 
-    secret_key = "5ba99a03e46a687041b16ec552bcdf9c"
+    secret_key = "5ba99a03e46a687041b16ec552bcdf9c" #generated manually elsewhere
 
-    checksum_str = "pid={}&ref={}&result={}&token={}".format(pid, ref, "success", secret_key)
+    checksum_str = "pid={}&ref={}&result={}&token={}".format(pid, ref, "success", secret_key) #checksum
 
-    m = md5(checksum_str.encode("ascii"))
+    m = md5(checksum_str.encode("ascii")) #encode
     checksum = m.hexdigest()
 
     #buyer_id = pid.split('-')[0]
     #game_id = pid.split('-')[1]
-    game = Game.objects.get(id=game_id)
-    category = game.category
+    game = Game.objects.get(id=game_id) #get game id
+    category = game.category #game's category
 
-    current_user = request.user
+    current_user = request.user #current user
 
     context = {
 	    'game': game,
@@ -145,31 +156,36 @@ def success_payment(request,game_id,category_pk):
     #add game to user bought games
     request.user.userprofile.games.add(game)
     game.times_sold = game.times_sold + 1
+    game.save()
 
     return render(request, 'games/payment_success.html', context)
 
 def account_activation_sent(request):
+    #handles what happen after user press register
     msg = "Your account activation email has been sent to you. Please click the link provided to log in to your account"
     return HttpResponse(msg)
 
 def activate(request, uidb64, token):
 
+   #function activates email auth
 
     uid = force_text(urlsafe_base64_decode(uidb64))
     user = User.objects.get(pk=uid)
 
 
     if user is not None and account_activation_token.check_token(user, token):
+        #if successful confirmed
         user.userprofile.email_confirmed = True
         user.is_active = True
         global utype
         user.userprofile.userType = utype
-        user.save()
-        login(request, user)
-        return redirect('games:index')
+        user.save() #save the user to database
+        login(request, user) #make login
+        return redirect('games:index') #return to the main view
     else:
         return render(request, 'games:categoryView')
 def save(request):
+    #saving score to database
     score = request.GET['score']
     user = request.GET['user']
     game = request.GET['game']

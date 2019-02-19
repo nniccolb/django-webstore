@@ -24,6 +24,15 @@ form label {
 
 form button {
     margin-top: 10px;
+    border: 2px solid black; 
+    outline: none; 
+    border-radius: 5px; 
+    padding: 5px 20px;
+    background-color: #06BB60;
+}
+
+form button:hover {
+    background-color: green;
 }
 
 #content h4 {
